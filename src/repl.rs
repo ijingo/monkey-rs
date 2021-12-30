@@ -7,7 +7,7 @@ pub fn start<R, W>(mut reader: R, mut writer: W) -> io::Result<()>
           W: io::Write,
 {
     loop {
-        writer.write(b">> ")?;
+        writer.write_all(b">> ")?;
         writer.flush()?;
         let mut line = String::new();
         reader.read_line(&mut line)?;
@@ -19,7 +19,7 @@ pub fn start<R, W>(mut reader: R, mut writer: W) -> io::Result<()>
                 break;
             } else {
                 let output = format!("{}\n", tok);
-                writer.write(output.as_bytes())?;
+                writer.write_all(output.as_bytes())?;
                 writer.flush()?;
             }
         }

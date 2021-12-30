@@ -208,7 +208,7 @@ impl fmt::Display for ExpressionStatement {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Default)]
 pub struct Program {
     pub statements: Vec<Statement>,
 }

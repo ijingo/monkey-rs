@@ -49,7 +49,7 @@ impl<'a> Parser<'a> {
             token = self.current_token.clone();
         }
 
-        if errors.len() > 0 {
+        if !errors.is_empty() {
             Err(errors)
         } else {
             Ok(program)
@@ -127,7 +127,7 @@ impl<'a> Parser<'a> {
         match self.peek_token.clone() {
             Token::Ident(ident) => {
                 self.next_token();
-                Ok(ident.to_owned())
+                Ok(ident)
             },
             _ => Err(ParseError::new(format!("Invalid identifier: {}", self.peek_token))),
         }
