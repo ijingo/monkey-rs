@@ -48,9 +48,12 @@ pub enum Expression {
     Infix(Box<InfixExpression>),
     Boolean(bool),
     String(String),
+    Array(Vec<Expression>),
+    Hash(Vec<(Expression, Expression)>),
     If(Box<IfExpression>),
     Function(Box<FunctionLiteral>),
     Call(Box<CallExpression>),
+    Index(Box<Expression>, Box<Expression>),
 }
 
 impl fmt::Display for Expression {
@@ -62,12 +65,31 @@ impl fmt::Display for Expression {
             Expression::Infix(infix) => infix.to_string(),
             Expression::Boolean(b) => b.to_string(),
             Expression::String(s) => format!("\"{}\"", s),
+            Expression::Array(arr) => format!("[{}]", format_expressions(arr)),
+            Expression::Hash(map) => format!("{{{}}}", format_expression_pairs(map)),
             Expression::If(expr) => expr.to_string(),
             Expression::Function(func) => func.to_string(),
             Expression::Call(call) => call.to_string(),
+            Expression::Index(left, index) => format!("({}[{}])", left, index),
         };
         write!(f, "{}", s)
     }
+}
+
+fn format_expressions(expressions: &[Expression]) -> String {
+    expressions
+        .iter()
+        .map(|expr| expr.to_string())
+        .collect::<Vec<String>>()
+        .join(", ")
+}
+
+fn format_expression_pairs(expression_pairs: &[(Expression, Expression)]) -> String {
+    expression_pairs
+        .iter()
+        .map(|(k, v)| format!("{}: {}", k.to_string(), v.to_string()))
+        .collect::<Vec<String>>()
+        .join(", ")
 }
 
 #[derive(Hash, Eq, PartialEq, Clone, Debug)]

@@ -177,21 +177,6 @@ impl<'a> Parser<'a> {
     fn peek_right_binding_power(&mut self) -> Precedence {
         Precedence::for_token(&self.peek_token)
     }
-
-    fn infix_fn(token: &Token) -> Option<InfixFn> {
-        match token {
-            Token::Plus
-             | Token::Minus
-             | Token::Multiply
-             | Token::Divide
-             | Token::Equal
-             | Token::NotEqual
-             | Token::LessThan
-             | Token::GreaterThan => Some(Parser::parse_infix_expression),
-            Token::LParen => Some(Parser::parse_call_expression),
-            _ => None,
-        }
-    }
 }
 
 // expresion parser: prefix functions
@@ -206,6 +191,8 @@ impl<'a> Parser<'a> {
             Token::LParen => Some(Parser::parse_grouped_expression),
             Token::If => Some(Parser::parse_if_expression),
             Token::Function => Some(Parser::parse_function_literal),
+            Token::LBracket => Some(Parser::parse_array_literal),
+            Token::LBrace => Some(Parser::parse_hash_literal),
             _ => None,
         }
     }
@@ -315,10 +302,54 @@ impl<'a> Parser<'a> {
         }
         Err(ParseError::new(format!("Error on parsing identifier expression with {}", parser.current_token)))
     }
+
+    fn parse_array_literal(parser: &mut Parser<'_>) -> Result<Expression, ParseError> {
+        let items = parser.parse_expression_list(Token::RBracket)?;
+        Ok(Expression::Array(items))
+    }
+
+    fn parse_hash_literal(parser: &mut Parser<'_>) -> Result<Expression, ParseError> {
+        let mut pairs: Vec<(Expression, Expression)> = Vec::new();
+
+        while !parser.check_peek_token_is(&Token::RBrace) {
+            parser.next_token();
+            let key = parser.parse_expression(Precedence::Lowest)?;
+
+            parser.expect_peek_token(Token::Colon)?;
+            parser.next_token();
+            let value = parser.parse_expression(Precedence::Lowest)?;
+
+            pairs.push((key, value));
+
+            if !parser.check_peek_token_is(&Token::RBrace) {
+                parser.expect_peek_token(Token::Comma)?;
+            }
+        }
+
+        parser.expect_peek_token(Token::RBrace)?;
+
+        Ok(Expression::Hash(pairs))
+    }
 }
 
 // expresion parser: infix functions
 impl<'a> Parser<'a> {
+    fn infix_fn(token: &Token) -> Option<InfixFn> {
+        match token {
+            Token::Plus
+             | Token::Minus
+             | Token::Multiply
+             | Token::Divide
+             | Token::Equal
+             | Token::NotEqual
+             | Token::LessThan
+             | Token::GreaterThan => Some(Parser::parse_infix_expression),
+            Token::LParen => Some(Parser::parse_call_expression),
+            Token::LBracket => Some(Parser::parse_index_expression),
+            _ => None,
+        }
+    }
+
     fn parse_infix_expression(parser: &mut Parser<'_>, left: Expression) -> Result<Expression, ParseError> {
         let operator = parser.current_token.clone();
         let binding_power = parser.current_right_binding_power();
@@ -330,6 +361,13 @@ impl<'a> Parser<'a> {
     fn parse_call_expression(parser: &mut Parser<'_>, function: Expression) -> Result<Expression, ParseError> {
         let arguments = parser.parse_expression_list(Token::RParen)?;
         Ok(Expression::Call(Box::new(CallExpression{function, arguments})))
+    }
+
+    fn parse_index_expression(parser: &mut Parser<'_>, left: Expression) -> Result<Expression, ParseError> {
+        parser.next_token();
+        let expr = Expression::Index(Box::new(left), Box::new(parser.parse_expression(Precedence::Lowest)?));
+        parser.expect_peek_token(Token::RBracket)?;
+        Ok(expr)
     }
 }
 
@@ -451,6 +489,14 @@ mod tests {
             ("a + add(b * c) + d", "((a + add((b * c))) + d)"),
             ("add(a, b, 1, 2 * 3, 4 + 5, add(6, 7 * 8))", "add(a, b, 1, (2 * 3), (4 + 5), add(6, (7 * 8)))"),
             ("add(a + b + c * d / f + g)", "add((((a + b) + ((c * d) / f)) + g))"),
+            (
+                "a * [1, 2, 3, 4][b * c] * d",
+                "((a * ([1, 2, 3, 4][(b * c)])) * d)",
+            ),
+            (
+                "add(a * b[2], b[1], 2 * [1, 2][1])",
+                "add((a * (b[2])), (b[1]), (2 * ([1, 2][1])))",
+            ),
         ];
 
         apply_test(&test_case);
@@ -503,6 +549,31 @@ mod tests {
     fn test_string_literal_expression() {
         let test_case = [
             (r#""hello world";"#, r#""hello world""#)
+        ];
+        apply_test(&test_case);
+    }
+
+    #[test]
+    fn test_index_expression() {
+        let test_case = [
+            ("myArray[1 + 1]", "(myArray[(1 + 1)])"),
+            (r#"myMap["key"]"#, r#"(myMap["key"])"#),
+        ];
+        apply_test(&test_case);
+    }
+
+    #[test]
+    fn test_hash_literal_expression() {
+        let test_case = [
+            (
+                r#"{"one": 1, "two": 2, "three": 3}"#,
+                r#"{"one": 1, "two": 2, "three": 3}"#,
+            ),
+            (r#"{}"#, r#"{}"#),
+            (
+                r#"{"one": 0 + 1, "two": 10 - 8, "three": 15 / 5}"#,
+                r#"{"one": (0 + 1), "two": (10 - 8), "three": (15 / 5)}"#,
+            ),
         ];
         apply_test(&test_case);
     }

@@ -8,7 +8,8 @@ pub enum Precedence {
     Sum,         // + or -
     Product,     // * or /
     Prefix,      // -X or !X
-    Call,        // Function call
+    Call,        // function call
+    Index,       // array[index]
 }
 
 impl Precedence {
@@ -19,6 +20,7 @@ impl Precedence {
             Token::LessThan | Token::GreaterThan => Precedence::LessGreater,
             Token::Equal | Token::NotEqual => Precedence::Equals,
             Token::LParen => Precedence::Call,
+            Token::LBracket => Precedence::Index,
             _ => Precedence::Lowest,
         }
     }
