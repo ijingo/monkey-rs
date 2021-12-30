@@ -11,6 +11,17 @@ pub enum Node {
     Expression(Box<Expression>),
 }
 
+impl fmt::Display for Node {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        let s = match self {
+            Node::Program(program) => format!("{}", program),
+            Node::Statement(stmt) => format!("{}", stmt),
+            Node::Expression(expr) => format!("{}", expr),
+        };
+        write!(f, "{}", s)
+    }
+}
+
 #[derive(Hash, Eq, PartialEq, Clone, Debug)]
 pub enum Statement {
     Let(Box<LetStatement>),
@@ -50,7 +61,7 @@ impl fmt::Display for Expression {
             Expression::Prefix(prefix) => prefix.to_string(),
             Expression::Infix(infix) => infix.to_string(),
             Expression::Boolean(b) => b.to_string(),
-            Expression::String(s) => s.clone(),
+            Expression::String(s) => format!("\"{}\"", s),
             Expression::If(expr) => expr.to_string(),
             Expression::Function(func) => func.to_string(),
             Expression::Call(call) => call.to_string(),
@@ -68,9 +79,9 @@ pub struct IfExpression {
 
 impl fmt::Display for IfExpression {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "if {} {}", self.condition, self.consequence)?;
+        write!(f, "if {} {{ {} }}", self.condition, self.consequence)?;
         if let Some(stmt) = &self.alternative {
-            write!(f, "else {}", stmt)?;
+            write!(f, " else {{ {} }}", stmt)?;
         }
         Ok(())
     }
@@ -99,7 +110,7 @@ pub struct FunctionLiteral {
 impl fmt::Display for FunctionLiteral {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         let s = self.parameters.iter().map(|p| p.to_string()).collect::<Vec<String>>().join(", ");
-        write!(f, "({}) {}", s, self.body)
+        write!(f, "fn({}) {{ {} }}", s, self.body)
     }
 }
 

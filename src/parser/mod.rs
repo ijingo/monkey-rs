@@ -15,6 +15,14 @@ pub struct Parser<'a> {
     peek_token: Token,
 }
 
+pub fn parse(input: &str) -> Result<Node, ParseErrors> {
+    let lexer = Lexer::new(input);
+    let mut parser = Parser::new(lexer);
+    let program = parser.parse_program()?;
+
+    Ok(Node::Program(Box::new(program)))
+}
+
 impl<'a> Parser<'a> {
     pub fn new(lexer: Lexer<'_>) -> Parser<'_> {
         let mut lexer = lexer;
@@ -145,6 +153,23 @@ impl<'a> Parser<'a> {
         Ok(left_expr)
     } 
 
+    fn parse_expression_list(&mut self, stop_token: Token) -> Result<Vec<Expression>, ParseError> {
+        let mut res: Vec<Expression> = Vec::new();
+        if self.check_peek_token_is(&stop_token) {
+            self.next_token();
+            return Ok(res);
+        }
+        self.next_token();
+        res.push(self.parse_expression(Precedence::Lowest)?);
+        while self.check_peek_token_is(&Token::Comma) {
+            self.next_token();
+            self.next_token();
+            res.push(self.parse_expression(Precedence::Lowest)?);
+        }
+        self.expect_peek_token(stop_token)?;
+        Ok(res)
+    }
+
     fn current_right_binding_power(&mut self) -> Precedence {
         Precedence::for_token(&self.current_token)
     }
@@ -153,9 +178,19 @@ impl<'a> Parser<'a> {
         Precedence::for_token(&self.peek_token)
     }
 
-  
     fn infix_fn(token: &Token) -> Option<InfixFn> {
-        None
+        match token {
+            Token::Plus
+             | Token::Minus
+             | Token::Multiply
+             | Token::Divide
+             | Token::Equal
+             | Token::NotEqual
+             | Token::LessThan
+             | Token::GreaterThan => Some(Parser::parse_infix_expression),
+            Token::LParen => Some(Parser::parse_call_expression),
+            _ => None,
+        }
     }
 }
 
@@ -223,13 +258,14 @@ impl<'a> Parser<'a> {
 
     fn parse_if_expression(parser: &mut Parser<'_>) -> Result<Expression, ParseError> {
         parser.expect_peek_token(Token::LParen)?;
+        parser.next_token();
         let condition = parser.parse_expression(Precedence::Lowest)?;
         parser.expect_peek_token(Token::RParen)?;
-        parser.expect_peek_token(Token::LBracket)?;
+        parser.expect_peek_token(Token::LBrace)?;
         let consequence = Parser::parse_block_statement(parser)?;
         let alternative = if parser.check_peek_token_is(&Token::Else) {
             parser.next_token();
-            parser.expect_peek_token(Token::LBracket)?;
+            parser.expect_peek_token(Token::LBrace)?;
             Some(Parser::parse_block_statement(parser)?)
         } else {
             None
@@ -240,7 +276,7 @@ impl<'a> Parser<'a> {
     fn parse_block_statement(parser: &mut Parser<'_>) -> Result<BlockStatement, ParseError> {
         let mut statements = Vec::new();
         parser.next_token();
-        while !parser.check_current_token_is(&Token::RBracket) && !parser.check_current_token_is(&Token::EOF) {
+        while !parser.check_current_token_is(&Token::RBrace) && !parser.check_current_token_is(&Token::EOF) {
             let stmt = parser.parse_statement()?;
             statements.push(stmt);
             parser.next_token();
@@ -251,7 +287,7 @@ impl<'a> Parser<'a> {
     fn parse_function_literal(parser: &mut Parser<'_>) -> Result<Expression, ParseError> {
         parser.expect_peek_token(Token::LParen)?;
         let parameters = Parser::parse_function_parameters(parser)?;
-        parser.expect_peek_token(Token::LBracket)?;
+        parser.expect_peek_token(Token::LBrace)?;
         let body = Parser::parse_block_statement(parser)?;
         Ok(Expression::Function(Box::new(FunctionLiteral{parameters,body})))
     }
@@ -279,4 +315,196 @@ impl<'a> Parser<'a> {
         }
         Err(ParseError::new(format!("Error on parsing identifier expression with {}", parser.current_token)))
     }
+}
+
+// expresion parser: infix functions
+impl<'a> Parser<'a> {
+    fn parse_infix_expression(parser: &mut Parser<'_>, left: Expression) -> Result<Expression, ParseError> {
+        let operator = parser.current_token.clone();
+        let binding_power = parser.current_right_binding_power();
+        parser.next_token();
+        let right = parser.parse_expression(binding_power)?;
+        Ok(Expression::Infix(Box::new(InfixExpression{operator, left, right})))
+    }
+
+    fn parse_call_expression(parser: &mut Parser<'_>, function: Expression) -> Result<Expression, ParseError> {
+        let arguments = parser.parse_expression_list(Token::RParen)?;
+        Ok(Expression::Call(Box::new(CallExpression{function, arguments})))
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn apply_test(test_case: &[(&str, &str)]) {
+        for (input, expected) in test_case {
+            match parse(input) {
+                Ok(node) => assert_eq!(expected, &format!("{}", node)),
+                Err(e) => panic!("Parsing Error: {:#?}", e),
+            }
+        }
+    }
+
+    #[test]
+    fn test_let_statement() {
+        let test_case = [
+            ("let x = 5;", "let x = 5;"),
+            ("let y = true;", "let y = true;"),
+            ("let foobar = y;", "let foobar = y;"),
+        ];
+
+        apply_test(&test_case);
+    }
+
+    #[test]
+    fn test_return_statement() {
+        let test_case = [
+            ("return 5;", "return 5;"),
+            ("return true;", "return true;"),
+            ("return foobar;", "return foobar;"),
+        ];
+
+        apply_test(&test_case);
+    }
+
+    #[test]
+    fn test_identifier_expression() {
+        let test_case = [("foobar;", "foobar")];
+
+        apply_test(&test_case);
+    }
+
+    #[test]
+    fn test_integer_literal_expression() {
+        let test_case = [("5;", "5")];
+
+        apply_test(&test_case);
+    }
+
+    #[test]
+    fn test_parse_prefix_expression() {
+        let test_case = [
+            ("!5;", "(!5)"),
+            ("-15;", "(-15)"),
+            ("!foobar;", "(!foobar)"),
+            ("-foobar;", "(-foobar)"),
+            ("!true;", "(!true)"),
+            ("!false;", "(!false)"),
+        ];
+
+        apply_test(&test_case);
+    }
+
+    #[test]
+    fn test_parse_infix_expression() {
+        let test_case = [
+            ("5 + 5;", "(5 + 5)"),
+            ("5 - 5;", "(5 - 5)"),
+            ("5 * 5;", "(5 * 5)"),
+            ("5 / 5;", "(5 / 5)"),
+            ("5 > 5;", "(5 > 5)"),
+            ("5 < 5;", "(5 < 5)"),
+            ("5 == 5;", "(5 == 5)"),
+            ("5 != 5;", "(5 != 5)"),
+            ("foobar + barfoo;", "(foobar + barfoo)"),
+            ("foobar - barfoo;", "(foobar - barfoo)"),
+            ("foobar * barfoo;", "(foobar * barfoo)"),
+            ("foobar / barfoo;", "(foobar / barfoo)"),
+            ("foobar > barfoo;", "(foobar > barfoo)"),
+            ("foobar < barfoo;", "(foobar < barfoo)"),
+            ("foobar == barfoo;", "(foobar == barfoo)"),
+            ("foobar != barfoo;", "(foobar != barfoo)"),
+            ("true == true", "(true == true)"),
+            ("true != false", "(true != false)"),
+            ("false == false", "(false == false)"),
+        ];
+
+        apply_test(&test_case);
+    }
+
+    #[test]
+    fn test_operator_precedence() {
+        let test_case = [
+            ("-a * b", "((-a) * b)"),
+            ("!-a", "(!(-a))"),
+            ("a + b + c", "((a + b) + c)"),
+            ("a + b - c", "((a + b) - c)"),
+            ("a * b * c", "((a * b) * c)"),
+            ("a * b / c", "((a * b) / c)"),
+            ("a + b / c", "(a + (b / c))"),
+            ("a + b * c + d / e - f", "(((a + (b * c)) + (d / e)) - f)"),
+            ("3 + 4; -5 * 5", "(3 + 4)((-5) * 5)"),
+            ("5 > 4 == 3 < 4", "((5 > 4) == (3 < 4))"),
+            ("5 < 4 != 3 > 4", "((5 < 4) != (3 > 4))"),
+            ("3 + 4 * 5 == 3 * 1 + 4 * 5", "((3 + (4 * 5)) == ((3 * 1) + (4 * 5)))"),
+            ("true", "true"),
+            ("false", "false"),
+            ("3 > 5 == false", "((3 > 5) == false)"),
+            ("3 < 5 == true", "((3 < 5) == true)"),
+            ("1 + (2 + 3) + 4", "((1 + (2 + 3)) + 4)"),
+            ("(5 + 5) * 2", "((5 + 5) * 2)"),
+            ("2 / (5 + 5)", "(2 / (5 + 5))"),
+            ("(5 + 5) * 2 * (5 + 5)", "(((5 + 5) * 2) * (5 + 5))"),
+            ("-(5 + 5)", "(-(5 + 5))"),
+            ("!(true == true)", "(!(true == true))"),
+            ("a + add(b * c) + d", "((a + add((b * c))) + d)"),
+            ("add(a, b, 1, 2 * 3, 4 + 5, add(6, 7 * 8))", "add(a, b, 1, (2 * 3), (4 + 5), add(6, (7 * 8)))"),
+            ("add(a + b + c * d / f + g)", "add((((a + b) + ((c * d) / f)) + g))"),
+        ];
+
+        apply_test(&test_case);
+    }
+
+    #[test]
+    fn test_boolean_literal_expression() {
+        let test_case = [
+            ("true;", "true"),
+            ("false;", "false")
+        ];
+        apply_test(&test_case);
+    }
+
+    #[test]
+    fn test_if_expression() {
+        let test_case = [
+            ("if (x < y) { x }", "if (x < y) { x }")
+        ];
+        apply_test(&test_case);
+    }
+
+    #[test]
+    fn test_if_else_expression() {
+        let test_case = [
+            ("if (x < y) { x } else { y }", "if (x < y) { x } else { y }")
+        ];
+        apply_test(&test_case);
+    }
+
+    #[test]
+    fn test_function_expression() {
+        let test_case = [
+            ("fn() {};", "fn() {  }"),
+            ("fn(x) {};", "fn(x) {  }"),
+            ("fn(x, y, z) {};", "fn(x, y, z) {  }"),
+        ];
+        apply_test(&test_case);
+    }
+
+    #[test]
+    fn test_fn_call_expression() {
+        let test_case = [
+            ("add(1, 2 * 3, 4 + 5);", "add(1, (2 * 3), (4 + 5))")
+        ];
+        apply_test(&test_case);
+    }
+
+    #[test]
+    fn test_string_literal_expression() {
+        let test_case = [
+            (r#""hello world";"#, r#""hello world""#)
+        ];
+        apply_test(&test_case);
+    }
+
 }
