@@ -1,4 +1,5 @@
 # Monkey RS
+[![build](https://github.com/ijingo/monkey-rs/actions/workflows/build.yml/badge.svg)](#building)
 [![License: MIT](https://img.shields.io/badge/license-MIT-green)](#license)
 
 ## What's Monkey?
