@@ -11,6 +11,8 @@
 
 It's came from Thorsten Ball's excellent book [Writing An Interpreter in Go](https://interpreterbook.com/).
 
+I create this repo mainly for learning the rust language.
+
 ### Monkey Language
 
 Monkey looks like this:
