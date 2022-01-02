@@ -10,3 +10,4 @@ name = "main"
 path = "src/bin/main.rs"
 
 [dependencies]
+rustyline = "9.1.0"

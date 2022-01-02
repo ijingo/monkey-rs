@@ -1,28 +1,52 @@
-use std::io;
-use crate::lexer::Lexer;
-use crate::lexer::token::Token;
+use rustyline::error::ReadlineError;
+use rustyline::Editor;
 
-pub fn start<R, W>(mut reader: R, mut writer: W) -> io::Result<()> 
-    where R: io::BufRead,
-          W: io::Write,
-{
+use std::rc::Rc;
+use std::cell::RefCell;
+
+use crate::evaluator::eval;
+use crate::evaluator::env::Environment;
+use crate::parser;
+
+pub fn start() {
+    let mut rl = Editor::<()>::new();
+    let env: Rc<RefCell<Environment>> = Rc::new(RefCell::new(Environment::new()));
+
     loop {
-        writer.write_all(b">> ")?;
-        writer.flush()?;
-        let mut line = String::new();
-        reader.read_line(&mut line)?;
+        match rl.readline(">>> ") {
+            Ok(line) => {
+                rl.add_history_entry(<String as AsRef<str>>::as_ref(&line));
 
-        let mut lexer = Lexer::new(&line);
-        loop {
-            let tok = lexer.next_token();
-            if tok == Token::EOF {
+                if line.trim() == "exit" {
+                    break;
+                }
+
+                match parser::parse(&line) {
+                    Ok(node) => match eval(&node, Rc::clone(&env)) {
+                        Ok(evaluated) => {
+                            println!("{}", evaluated)
+                        }
+                        Err(err) => eprintln!("{}", err),
+                    },
+                    Err(errors) => {
+                        for e in errors {
+                            eprintln!("{}", e);
+                        }
+                    }
+                }
+            }
+            Err(ReadlineError::Interrupted) => {
+                println!("CTRL-C");
                 break;
-            } else {
-                let output = format!("{}\n", tok);
-                writer.write_all(output.as_bytes())?;
-                writer.flush()?;
+            }
+            Err(ReadlineError::Eof) => {
+                println!("CTRL-D");
+                break;
+            }
+            Err(err) => {
+                println!("Error: {:?}", err);
+                break;
             }
         }
     }
-
 }
