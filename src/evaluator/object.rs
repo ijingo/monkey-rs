@@ -1,12 +1,12 @@
-use std::fmt;
-use std::rc::Rc;
 use std::cell::RefCell;
 use std::collections::HashMap;
+use std::fmt;
 use std::hash::{Hash, Hasher};
+use std::rc::Rc;
 
 use crate::ast;
-use crate::evaluator::env::Environment;
 use crate::evaluator::builtin::Builtin;
+use crate::evaluator::env::Environment;
 
 #[derive(Hash, Eq, PartialEq, Clone, Debug)]
 pub enum Object {
@@ -65,7 +65,11 @@ impl Function {
     fn inspect(&self) -> String {
         format!(
             "fn({}) {{\n{}\n}}",
-            self.parameters.iter().map(|p| p.to_string()).collect::<Vec<String>>().join(", "), 
+            self.parameters
+                .iter()
+                .map(|p| p.to_string())
+                .collect::<Vec<String>>()
+                .join(", "),
             self.body.to_string()
         )
     }
@@ -84,8 +88,13 @@ impl Hash for Array {
 
 impl Array {
     fn inspect(&self) -> String {
-        format!("[{}]",
-            self.elements.iter().map(|e| e.to_string()).collect::<Vec<String>>().join(", ")
+        format!(
+            "[{}]",
+            self.elements
+                .iter()
+                .map(|e| e.to_string())
+                .collect::<Vec<String>>()
+                .join(", ")
         )
     }
 }
@@ -103,7 +112,8 @@ impl Hash for MonkeyHash {
 
 impl MonkeyHash {
     fn inspect(&self) -> String {
-        format!("{{{}}}",
+        format!(
+            "{{{}}}",
             self.pairs
                 .iter()
                 .map(|(k, v)| format!("{}: {}", k.inspect(), v.inspect()))

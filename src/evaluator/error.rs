@@ -1,7 +1,7 @@
 use std::fmt;
 
 #[derive(Debug, Clone)]
-pub struct EvalError(String); 
+pub struct EvalError(String);
 
 impl fmt::Display for EvalError {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {

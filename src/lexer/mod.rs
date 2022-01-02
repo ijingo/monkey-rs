@@ -1,15 +1,14 @@
 pub mod token;
 
-use token::Token;
 use std::iter::Peekable;
 use std::str::Chars;
+use token::Token;
 
 pub struct Lexer<'a> {
     input: Peekable<Chars<'a>>,
 }
 
-impl <'a> Lexer<'a> {
-
+impl<'a> Lexer<'a> {
     pub fn new(input: &'a str) -> Self {
         Lexer {
             input: input.chars().peekable(),
@@ -48,7 +47,7 @@ impl <'a> Lexer<'a> {
                 } else {
                     Token::Assign
                 }
-            },
+            }
             Some('!') => {
                 if let Some('=') = self.peek_char() {
                     self.read_char();
@@ -56,7 +55,7 @@ impl <'a> Lexer<'a> {
                 } else {
                     Token::Bang
                 }
-            },
+            }
             Some('>') => Token::GreaterThan,
             Some('<') => Token::LessThan,
             Some(',') => Token::Comma,
@@ -98,11 +97,11 @@ impl <'a> Lexer<'a> {
         str.parse().unwrap()
     }
 
-    fn read_string(&mut self)  -> String {
+    fn read_string(&mut self) -> String {
         let mut str = String::new();
         while let Some(ch) = self.read_char() {
             if ch == '"' {
-                return str
+                return str;
             }
             str.push(ch)
         }
@@ -123,7 +122,6 @@ impl <'a> Lexer<'a> {
         ident
     }
 
-
     fn is_letter(ch: char) -> bool {
         ch.is_alphabetic() || ch == '_'
     }
@@ -131,8 +129,8 @@ impl <'a> Lexer<'a> {
 
 #[cfg(test)]
 mod test {
-    use token::Token;
     use super::*;
+    use token::Token;
 
     #[test]
     fn next_token() {

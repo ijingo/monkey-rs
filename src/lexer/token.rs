@@ -12,36 +12,36 @@ pub enum Token {
     BoolLiteral(bool),
 
     // Operators
-    Plus,              // +
-    Minus,             // -
-    Multiply,          // *
-    Divide,            // /
-    Equal,             // ==
-    NotEqual,          // !=
-    GreaterThan,       // >
-    LessThan,          // <
-    Bang,              // !
+    Plus,        // +
+    Minus,       // -
+    Multiply,    // *
+    Divide,      // /
+    Equal,       // ==
+    NotEqual,    // !=
+    GreaterThan, // >
+    LessThan,    // <
+    Bang,        // !
 
     // Delimiters
-    Comma,             // ,
-    Colon,             // :
-    SemiColon,         // ;
-    LParen,            // (
-    RParen,            // )
-    LBrace,            // {
-    RBrace,            // }
-    LBracket,          // [
-    RBracket,          // ]
+    Comma,     // ,
+    Colon,     // :
+    SemiColon, // ;
+    LParen,    // (
+    RParen,    // )
+    LBrace,    // {
+    RBrace,    // }
+    LBracket,  // [
+    RBracket,  // ]
 
     // Statements
-    Assign,            // =
+    Assign, // =
 
     // keywords
-    Function,          // "fn"
-    Let,               // "let"
-    Return,            // "return"
-    If,                // "if"
-    Else,              // "else"
+    Function, // "fn"
+    Let,      // "let"
+    Return,   // "return"
+    If,       // "if"
+    Else,     // "else"
 }
 
 impl Token {
@@ -94,5 +94,4 @@ impl fmt::Display for Token {
             Token::Illegal => write!(f, "Illegal"),
         }
     }
-
 }

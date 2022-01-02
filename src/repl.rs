@@ -1,11 +1,11 @@
 use rustyline::error::ReadlineError;
 use rustyline::Editor;
 
-use std::rc::Rc;
 use std::cell::RefCell;
+use std::rc::Rc;
 
-use crate::evaluator::eval;
 use crate::evaluator::env::Environment;
+use crate::evaluator::eval;
 use crate::parser;
 
 pub fn start() {

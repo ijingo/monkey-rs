@@ -3,7 +3,7 @@ use crate::lexer::token::Token;
 #[derive(Debug, Copy, Clone, PartialEq, PartialOrd)]
 pub enum Precedence {
     Lowest,
-    Equals,     //  == or !=
+    Equals,      //  == or !=
     LessGreater, // > or <
     Sum,         // + or -
     Product,     // * or /
@@ -25,4 +25,3 @@ impl Precedence {
         }
     }
 }
-

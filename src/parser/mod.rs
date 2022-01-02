@@ -1,8 +1,8 @@
-pub mod precedence;
 pub mod error;
+pub mod precedence;
 
-use crate::lexer::{Lexer, token::*};
 use crate::ast::*;
+use crate::lexer::{token::*, Lexer};
 use crate::parser::error::*;
 use crate::parser::precedence::*;
 
@@ -78,7 +78,7 @@ impl<'a> Parser<'a> {
             self.next_token();
         }
 
-        Ok(Statement::Let(Box::new(LetStatement{name, value})))
+        Ok(Statement::Let(Box::new(LetStatement { name, value })))
     }
 
     fn parse_return_statement(&mut self) -> Result<Statement, ParseError> {
@@ -87,7 +87,7 @@ impl<'a> Parser<'a> {
         if self.check_peek_token_is(&Token::SemiColon) {
             self.next_token();
         }
-        Ok(Statement::Return(Box::new(ReturnStatement{value})))
+        Ok(Statement::Return(Box::new(ReturnStatement { value })))
     }
 
     fn parse_expression_statement(&mut self) -> Result<Statement, ParseError> {
@@ -95,7 +95,9 @@ impl<'a> Parser<'a> {
         if self.check_peek_token_is(&Token::SemiColon) {
             self.next_token();
         }
-        Ok(Statement::Expression(Box::new(ExpressionStatement{expression})))
+        Ok(Statement::Expression(Box::new(ExpressionStatement {
+            expression,
+        })))
     }
 
     fn check_current_token_is(&mut self, token: &Token) -> bool {
@@ -119,7 +121,10 @@ impl<'a> Parser<'a> {
             self.next_token();
             Ok(())
         } else {
-            Err(ParseError::new(format!("Unexpected next token: {}. Expect: {}", self.peek_token, token)))
+            Err(ParseError::new(format!(
+                "Unexpected next token: {}. Expect: {}",
+                self.peek_token, token
+            )))
         }
     }
 
@@ -128,20 +133,31 @@ impl<'a> Parser<'a> {
             Token::Ident(ident) => {
                 self.next_token();
                 Ok(ident)
-            },
-            _ => Err(ParseError::new(format!("Invalid identifier: {}", self.peek_token))),
+            }
+            _ => Err(ParseError::new(format!(
+                "Invalid identifier: {}",
+                self.peek_token
+            ))),
         }
     }
 
-    fn parse_expression(&mut self, left_binding_power: Precedence) -> Result<Expression, ParseError> {
+    fn parse_expression(
+        &mut self,
+        left_binding_power: Precedence,
+    ) -> Result<Expression, ParseError> {
         let mut left_expr;
         if let Some(prefix_fn) = Parser::prefix_fn(&self.current_token) {
             left_expr = prefix_fn(self)?;
         } else {
-            return Err(ParseError::new(format!("No prefix parser function for {} registered.", self.current_token)));
+            return Err(ParseError::new(format!(
+                "No prefix parser function for {} registered.",
+                self.current_token
+            )));
         }
 
-        while !self.check_peek_token_is(&Token::SemiColon) && left_binding_power < self.peek_right_binding_power() {
+        while !self.check_peek_token_is(&Token::SemiColon)
+            && left_binding_power < self.peek_right_binding_power()
+        {
             if let Some(infix_fn) = Parser::infix_fn(&self.peek_token) {
                 self.next_token();
                 left_expr = infix_fn(self, left_expr)?;
@@ -151,7 +167,7 @@ impl<'a> Parser<'a> {
         }
 
         Ok(left_expr)
-    } 
+    }
 
     fn parse_expression_list(&mut self, stop_token: Token) -> Result<Vec<Expression>, ParseError> {
         let mut res: Vec<Expression> = Vec::new();
@@ -181,7 +197,7 @@ impl<'a> Parser<'a> {
 
 // expresion parser: prefix functions
 impl<'a> Parser<'a> {
-  fn prefix_fn(token: &Token) -> Option<PrefixFn> {
+    fn prefix_fn(token: &Token) -> Option<PrefixFn> {
         match token {
             Token::Ident(_) => Some(Parser::parse_identifier),
             Token::IntLiteral(_) => Some(Parser::parse_integer_literal),
@@ -201,7 +217,10 @@ impl<'a> Parser<'a> {
         if let Token::Ident(name) = &parser.current_token {
             Ok(Expression::Identifier(name.to_owned()))
         } else {
-            Err(ParseError::new(format!("Error on parsing identifier {}", parser.current_token)))
+            Err(ParseError::new(format!(
+                "Error on parsing identifier {}",
+                parser.current_token
+            )))
         }
     }
 
@@ -209,7 +228,10 @@ impl<'a> Parser<'a> {
         if let Token::IntLiteral(value) = parser.current_token {
             Ok(Expression::Integer(value))
         } else {
-            Err(ParseError::new(format!("Error on parsing integer {}", parser.current_token)))
+            Err(ParseError::new(format!(
+                "Error on parsing integer {}",
+                parser.current_token
+            )))
         }
     }
 
@@ -217,7 +239,10 @@ impl<'a> Parser<'a> {
         if let Token::StringLiteral(value) = &parser.current_token {
             Ok(Expression::String(value.to_owned()))
         } else {
-            Err(ParseError::new(format!("Error on parsing string {}", parser.current_token)))
+            Err(ParseError::new(format!(
+                "Error on parsing string {}",
+                parser.current_token
+            )))
         }
     }
 
@@ -225,7 +250,10 @@ impl<'a> Parser<'a> {
         if let Token::BoolLiteral(value) = parser.current_token {
             Ok(Expression::Boolean(value))
         } else {
-            Err(ParseError::new(format!("Error on parsing boolean {}", parser.current_token)))
+            Err(ParseError::new(format!(
+                "Error on parsing boolean {}",
+                parser.current_token
+            )))
         }
     }
 
@@ -233,7 +261,10 @@ impl<'a> Parser<'a> {
         let operator = parser.current_token.clone();
         parser.next_token();
         let right = parser.parse_expression(Precedence::Prefix)?;
-        Ok(Expression::Prefix(Box::new(PrefixExpression{operator, right})))
+        Ok(Expression::Prefix(Box::new(PrefixExpression {
+            operator,
+            right,
+        })))
     }
 
     fn parse_grouped_expression(parser: &mut Parser<'_>) -> Result<Expression, ParseError> {
@@ -257,18 +288,24 @@ impl<'a> Parser<'a> {
         } else {
             None
         };
-        Ok(Expression::If(Box::new(IfExpression{condition, consequence, alternative})))
+        Ok(Expression::If(Box::new(IfExpression {
+            condition,
+            consequence,
+            alternative,
+        })))
     }
 
     fn parse_block_statement(parser: &mut Parser<'_>) -> Result<BlockStatement, ParseError> {
         let mut statements = Vec::new();
         parser.next_token();
-        while !parser.check_current_token_is(&Token::RBrace) && !parser.check_current_token_is(&Token::EOF) {
+        while !parser.check_current_token_is(&Token::RBrace)
+            && !parser.check_current_token_is(&Token::EOF)
+        {
             let stmt = parser.parse_statement()?;
             statements.push(stmt);
             parser.next_token();
         }
-        Ok(BlockStatement{statements})
+        Ok(BlockStatement { statements })
     }
 
     fn parse_function_literal(parser: &mut Parser<'_>) -> Result<Expression, ParseError> {
@@ -276,10 +313,15 @@ impl<'a> Parser<'a> {
         let parameters = Parser::parse_function_parameters(parser)?;
         parser.expect_peek_token(Token::LBrace)?;
         let body = Parser::parse_block_statement(parser)?;
-        Ok(Expression::Function(Box::new(FunctionLiteral{parameters,body})))
+        Ok(Expression::Function(Box::new(FunctionLiteral {
+            parameters,
+            body,
+        })))
     }
 
-    fn parse_function_parameters(parser: &mut Parser<'_>) -> Result<Vec<IdentifierExpression>, ParseError> {
+    fn parse_function_parameters(
+        parser: &mut Parser<'_>,
+    ) -> Result<Vec<IdentifierExpression>, ParseError> {
         let mut identifiers: Vec<IdentifierExpression> = Vec::new();
         if parser.check_peek_token_is(&Token::RParen) {
             parser.next_token();
@@ -296,11 +338,18 @@ impl<'a> Parser<'a> {
         Ok(identifiers)
     }
 
-    fn parse_identifier_expression(parser: &mut Parser<'_>) -> Result<IdentifierExpression, ParseError> {
+    fn parse_identifier_expression(
+        parser: &mut Parser<'_>,
+    ) -> Result<IdentifierExpression, ParseError> {
         if let Token::Ident(name) = &parser.current_token {
-            return Ok(IdentifierExpression{name: name.to_owned()});
+            return Ok(IdentifierExpression {
+                name: name.to_owned(),
+            });
         }
-        Err(ParseError::new(format!("Error on parsing identifier expression with {}", parser.current_token)))
+        Err(ParseError::new(format!(
+            "Error on parsing identifier expression with {}",
+            parser.current_token
+        )))
     }
 
     fn parse_array_literal(parser: &mut Parser<'_>) -> Result<Expression, ParseError> {
@@ -337,35 +386,54 @@ impl<'a> Parser<'a> {
     fn infix_fn(token: &Token) -> Option<InfixFn> {
         match token {
             Token::Plus
-             | Token::Minus
-             | Token::Multiply
-             | Token::Divide
-             | Token::Equal
-             | Token::NotEqual
-             | Token::LessThan
-             | Token::GreaterThan => Some(Parser::parse_infix_expression),
+            | Token::Minus
+            | Token::Multiply
+            | Token::Divide
+            | Token::Equal
+            | Token::NotEqual
+            | Token::LessThan
+            | Token::GreaterThan => Some(Parser::parse_infix_expression),
             Token::LParen => Some(Parser::parse_call_expression),
             Token::LBracket => Some(Parser::parse_index_expression),
             _ => None,
         }
     }
 
-    fn parse_infix_expression(parser: &mut Parser<'_>, left: Expression) -> Result<Expression, ParseError> {
+    fn parse_infix_expression(
+        parser: &mut Parser<'_>,
+        left: Expression,
+    ) -> Result<Expression, ParseError> {
         let operator = parser.current_token.clone();
         let binding_power = parser.current_right_binding_power();
         parser.next_token();
         let right = parser.parse_expression(binding_power)?;
-        Ok(Expression::Infix(Box::new(InfixExpression{operator, left, right})))
+        Ok(Expression::Infix(Box::new(InfixExpression {
+            operator,
+            left,
+            right,
+        })))
     }
 
-    fn parse_call_expression(parser: &mut Parser<'_>, function: Expression) -> Result<Expression, ParseError> {
+    fn parse_call_expression(
+        parser: &mut Parser<'_>,
+        function: Expression,
+    ) -> Result<Expression, ParseError> {
         let arguments = parser.parse_expression_list(Token::RParen)?;
-        Ok(Expression::Call(Box::new(CallExpression{function, arguments})))
+        Ok(Expression::Call(Box::new(CallExpression {
+            function,
+            arguments,
+        })))
     }
 
-    fn parse_index_expression(parser: &mut Parser<'_>, left: Expression) -> Result<Expression, ParseError> {
+    fn parse_index_expression(
+        parser: &mut Parser<'_>,
+        left: Expression,
+    ) -> Result<Expression, ParseError> {
         parser.next_token();
-        let expr = Expression::Index(Box::new(left), Box::new(parser.parse_expression(Precedence::Lowest)?));
+        let expr = Expression::Index(
+            Box::new(left),
+            Box::new(parser.parse_expression(Precedence::Lowest)?),
+        );
         parser.expect_peek_token(Token::RBracket)?;
         Ok(expr)
     }
@@ -475,7 +543,10 @@ mod test {
             ("3 + 4; -5 * 5", "(3 + 4)((-5) * 5)"),
             ("5 > 4 == 3 < 4", "((5 > 4) == (3 < 4))"),
             ("5 < 4 != 3 > 4", "((5 < 4) != (3 > 4))"),
-            ("3 + 4 * 5 == 3 * 1 + 4 * 5", "((3 + (4 * 5)) == ((3 * 1) + (4 * 5)))"),
+            (
+                "3 + 4 * 5 == 3 * 1 + 4 * 5",
+                "((3 + (4 * 5)) == ((3 * 1) + (4 * 5)))",
+            ),
             ("true", "true"),
             ("false", "false"),
             ("3 > 5 == false", "((3 > 5) == false)"),
@@ -487,8 +558,14 @@ mod test {
             ("-(5 + 5)", "(-(5 + 5))"),
             ("!(true == true)", "(!(true == true))"),
             ("a + add(b * c) + d", "((a + add((b * c))) + d)"),
-            ("add(a, b, 1, 2 * 3, 4 + 5, add(6, 7 * 8))", "add(a, b, 1, (2 * 3), (4 + 5), add(6, (7 * 8)))"),
-            ("add(a + b + c * d / f + g)", "add((((a + b) + ((c * d) / f)) + g))"),
+            (
+                "add(a, b, 1, 2 * 3, 4 + 5, add(6, 7 * 8))",
+                "add(a, b, 1, (2 * 3), (4 + 5), add(6, (7 * 8)))",
+            ),
+            (
+                "add(a + b + c * d / f + g)",
+                "add((((a + b) + ((c * d) / f)) + g))",
+            ),
             (
                 "a * [1, 2, 3, 4][b * c] * d",
                 "((a * ([1, 2, 3, 4][(b * c)])) * d)",
@@ -504,26 +581,19 @@ mod test {
 
     #[test]
     fn test_boolean_literal_expression() {
-        let test_case = [
-            ("true;", "true"),
-            ("false;", "false")
-        ];
+        let test_case = [("true;", "true"), ("false;", "false")];
         apply_test(&test_case);
     }
 
     #[test]
     fn test_if_expression() {
-        let test_case = [
-            ("if (x < y) { x }", "if (x < y) { x }")
-        ];
+        let test_case = [("if (x < y) { x }", "if (x < y) { x }")];
         apply_test(&test_case);
     }
 
     #[test]
     fn test_if_else_expression() {
-        let test_case = [
-            ("if (x < y) { x } else { y }", "if (x < y) { x } else { y }")
-        ];
+        let test_case = [("if (x < y) { x } else { y }", "if (x < y) { x } else { y }")];
         apply_test(&test_case);
     }
 
@@ -539,17 +609,13 @@ mod test {
 
     #[test]
     fn test_fn_call_expression() {
-        let test_case = [
-            ("add(1, 2 * 3, 4 + 5);", "add(1, (2 * 3), (4 + 5))")
-        ];
+        let test_case = [("add(1, 2 * 3, 4 + 5);", "add(1, (2 * 3), (4 + 5))")];
         apply_test(&test_case);
     }
 
     #[test]
     fn test_string_literal_expression() {
-        let test_case = [
-            (r#""hello world";"#, r#""hello world""#)
-        ];
+        let test_case = [(r#""hello world";"#, r#""hello world""#)];
         apply_test(&test_case);
     }
 
@@ -577,5 +643,4 @@ mod test {
         ];
         apply_test(&test_case);
     }
-
 }

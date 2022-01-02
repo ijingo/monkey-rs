@@ -131,7 +131,12 @@ pub struct FunctionLiteral {
 
 impl fmt::Display for FunctionLiteral {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        let s = self.parameters.iter().map(|p| p.to_string()).collect::<Vec<String>>().join(", ");
+        let s = self
+            .parameters
+            .iter()
+            .map(|p| p.to_string())
+            .collect::<Vec<String>>()
+            .join(", ");
         write!(f, "fn({}) {{ {} }}", s, self.body)
     }
 }
@@ -144,7 +149,12 @@ pub struct CallExpression {
 
 impl fmt::Display for CallExpression {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        let s = self.arguments.iter().map(|arg| arg.to_string()).collect::<Vec<String>>().join(", ");
+        let s = self
+            .arguments
+            .iter()
+            .map(|arg| arg.to_string())
+            .collect::<Vec<String>>()
+            .join(", ");
         write!(f, "{}({})", self.function, s)
     }
 }
@@ -221,7 +231,7 @@ impl fmt::Display for ReturnStatement {
 
 #[derive(Hash, Eq, PartialEq, Clone, Debug)]
 pub struct ExpressionStatement {
-    pub expression: Expression
+    pub expression: Expression,
 }
 
 impl fmt::Display for ExpressionStatement {
@@ -245,7 +255,12 @@ impl Program {
 
 impl fmt::Display for Program {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        let s = self.statements.iter().map(|stmt| stmt.to_string()).collect::<Vec<String>>().join("");
+        let s = self
+            .statements
+            .iter()
+            .map(|stmt| stmt.to_string())
+            .collect::<Vec<String>>()
+            .join("");
         write!(f, "{}", s)
     }
 }
@@ -256,13 +271,11 @@ mod test {
 
     #[test]
     fn display() {
-
-        let p = Program{
-            statements: vec![
-                Statement::Let(Box::new(
-                    LetStatement{
-                            name: "some_name".to_string(),
-                            value: Expression::Identifier("some_value".to_string())}))],
+        let p = Program {
+            statements: vec![Statement::Let(Box::new(LetStatement {
+                name: "some_name".to_string(),
+                value: Expression::Identifier("some_value".to_string()),
+            }))],
         };
 
         let expected = "let some_name = some_value;";

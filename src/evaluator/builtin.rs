@@ -1,7 +1,7 @@
 use std::rc::Rc;
 
-use crate::evaluator::object::{Object, Array};
 use crate::evaluator::error::EvalError;
+use crate::evaluator::object::{Array, Object};
 
 #[derive(Hash, Eq, PartialEq, Clone, Debug)]
 pub enum Builtin {
@@ -41,66 +41,88 @@ impl Builtin {
         match self {
             Builtin::Len => {
                 if args.len() != 1 {
-                    return Err(EvalError::new(format!("Expected 1 argument, but got #args: {}", args.len())));
+                    return Err(EvalError::new(format!(
+                        "Expected 1 argument, but got #args: {}",
+                        args.len()
+                    )));
                 }
                 let arg = Rc::clone(args.first().unwrap());
                 match &*arg {
                     Object::String(s) => Ok(Rc::new(Object::Integer(s.len() as i64))),
                     Object::Array(arr) => Ok(Rc::new(Object::Integer(arr.elements.len() as i64))),
-                    obj => Err(EvalError::new(format!("Object {:?} not supported as an argument for len()", obj))),
+                    obj => Err(EvalError::new(format!(
+                        "Object {:?} not supported as an argument for len()",
+                        obj
+                    ))),
                 }
-            },
+            }
             Builtin::First => {
                 if args.len() != 1 {
-                    return Err(EvalError::new(format!("Expected 1 argument, but got #args: {}", args.len())));
+                    return Err(EvalError::new(format!(
+                        "Expected 1 argument, but got #args: {}",
+                        args.len()
+                    )));
                 }
                 let arg = Rc::clone(args.first().unwrap());
                 match &*arg {
-                    Object::Array(arr) => {
-                        match arr.elements.first() {
-                            Some(el) => Ok(Rc::clone(el)),
-                            None => Ok(Rc::new(Object::Null)),
-                        }
-                    }
-                    obj => Err(EvalError::new(format!("Object {:?} not supported as an argument for first()", obj))),
+                    Object::Array(arr) => match arr.elements.first() {
+                        Some(el) => Ok(Rc::clone(el)),
+                        None => Ok(Rc::new(Object::Null)),
+                    },
+                    obj => Err(EvalError::new(format!(
+                        "Object {:?} not supported as an argument for first()",
+                        obj
+                    ))),
                 }
-            },
+            }
             Builtin::Last => {
                 if args.len() != 1 {
-                    return Err(EvalError::new(format!("Expected 1 argument, but got #args: {}", args.len())));
+                    return Err(EvalError::new(format!(
+                        "Expected 1 argument, but got #args: {}",
+                        args.len()
+                    )));
                 }
                 let arg = Rc::clone(args.last().unwrap());
                 match &*arg {
-                    Object::Array(arr) => {
-                        match arr.elements.last() {
-                            Some(el) => Ok(Rc::clone(el)),
-                            None => Ok(Rc::new(Object::Null)),
-                        }
-                    }
-                    obj => Err(EvalError::new(format!("Object {:?} not supported as an argument for last()", obj))),
+                    Object::Array(arr) => match arr.elements.last() {
+                        Some(el) => Ok(Rc::clone(el)),
+                        None => Ok(Rc::new(Object::Null)),
+                    },
+                    obj => Err(EvalError::new(format!(
+                        "Object {:?} not supported as an argument for last()",
+                        obj
+                    ))),
                 }
-            },
+            }
             Builtin::Rest => {
                 if args.len() != 1 {
-                    return Err(EvalError::new(format!("Expected 1 argument, but got #args: {}", args.len())));
+                    return Err(EvalError::new(format!(
+                        "Expected 1 argument, but got #args: {}",
+                        args.len()
+                    )));
                 }
                 let arg = Rc::clone(args.last().unwrap());
                 match &*arg {
                     Object::Array(arr) => {
                         if arr.elements.len() <= 1 {
-                            Ok(Rc::new(Object::Array(Rc::new(Array{elements: vec![]}))))
+                            Ok(Rc::new(Object::Array(Rc::new(Array { elements: vec![] }))))
                         } else {
                             let mut elements = arr.elements.clone();
                             elements.remove(0);
-                            Ok(Rc::new(Object::Array(Rc::new(Array{elements}))))
+                            Ok(Rc::new(Object::Array(Rc::new(Array { elements }))))
                         }
                     }
-                    obj => Err(EvalError::new(format!("Object {:?} not supported as an argument for rest()", obj))),
+                    obj => Err(EvalError::new(format!(
+                        "Object {:?} not supported as an argument for rest()",
+                        obj
+                    ))),
                 }
-            },
+            }
             Builtin::Push => {
                 if args.len() != 2 {
-                    return Err(EvalError::new(format!("push() takes an array and an object")));
+                    return Err(EvalError::new(format!(
+                        "push() takes an array and an object"
+                    )));
                 }
                 let array = Rc::clone(args.first().unwrap());
                 let object = Rc::clone(args.last().unwrap());
@@ -108,17 +130,20 @@ impl Builtin {
                     Object::Array(arr) => {
                         let mut elements = arr.elements.clone();
                         elements.push(object);
-                        Ok(Rc::new(Object::Array(Rc::new(Array{elements}))))
-                    },
-                    obj => Err(EvalError::new(format!("Object {:?} not supported as an argument for push()", obj))),
+                        Ok(Rc::new(Object::Array(Rc::new(Array { elements }))))
+                    }
+                    obj => Err(EvalError::new(format!(
+                        "Object {:?} not supported as an argument for push()",
+                        obj
+                    ))),
                 }
-            },
+            }
             Builtin::Puts => {
                 for arg in args {
                     println!("{}", arg.inspect())
                 }
                 Ok(Rc::new(Object::Null))
-            },
+            }
         }
     }
 }
