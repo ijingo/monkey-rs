@@ -103,7 +103,7 @@ $ cargo run
 
 ### Language Syntax Reference
 
-Please refer to [Writing An Interpreter In Go][writing-an-interpreter-in-go].
+Please refer to [Writing An Interpreter in Go](https://interpreterbook.com/).
 
 A non official document [link](docs/monkey.md).
 
