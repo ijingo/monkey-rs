@@ -220,8 +220,7 @@ fn eval_func_call(call: &CallExpression, env: Rc<RefCell<Environment>>) -> Resul
             Ok(unwrap_return_value(evaluated))
         },
         Object::Builtin(builtin) => {
-            // TODO: finish builtin applys 
-            Err(EvalError::new(format!("{:?} is not a function", func)))
+            Ok(builtin.apply(&args)?)
         },
         _ => Err(EvalError::new(format!("{:?} is not a function", func))),
     }
