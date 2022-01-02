@@ -42,7 +42,7 @@ impl fmt::Display for Statement {
 
 #[derive(Hash, Eq, PartialEq, Clone, Debug)]
 pub enum Expression {
-    Identifier(String),
+    Identifier(Identifier),
     Integer(i64),
     Prefix(Box<PrefixExpression>),
     Infix(Box<InfixExpression>),
