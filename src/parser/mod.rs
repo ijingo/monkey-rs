@@ -372,7 +372,7 @@ impl<'a> Parser<'a> {
 }
 
 #[cfg(test)]
-mod tests {
+mod test {
     use super::*;
 
     fn apply_test(test_case: &[(&str, &str)]) {

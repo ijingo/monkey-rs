@@ -59,7 +59,7 @@ impl Builtin {
                     Object::Array(arr) => {
                         match arr.elements.first() {
                             Some(el) => Ok(Rc::clone(el)),
-                            obj => Err(EvalError::new(format!("Object {:?} not supported as an argument for first()", obj))),
+                            None => Ok(Rc::new(Object::Null)),
                         }
                     }
                     obj => Err(EvalError::new(format!("Object {:?} not supported as an argument for first()", obj))),
@@ -74,7 +74,7 @@ impl Builtin {
                     Object::Array(arr) => {
                         match arr.elements.last() {
                             Some(el) => Ok(Rc::clone(el)),
-                            obj => Err(EvalError::new(format!("Object {:?} not supported as an argument for last()", obj))),
+                            None => Ok(Rc::new(Object::Null)),
                         }
                     }
                     obj => Err(EvalError::new(format!("Object {:?} not supported as an argument for last()", obj))),
